@@ -1,3 +1,4 @@
+using System.Reflection;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -32,10 +33,10 @@ app.MapGet("/health", () =>
 
 app.MapGet("/version", () =>
 {
-    var version = Environment.GetEnvironmentVariable("APP_VERSION") ?? "unknown";
+    var version = Environment.GetEnvironmentVariable("APP_VERSION") ;
     return Results.Ok(new
     {
-        version,
+        version = version ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
         timestampUtc = DateTime.UtcNow
     });
 }).WithName("version")

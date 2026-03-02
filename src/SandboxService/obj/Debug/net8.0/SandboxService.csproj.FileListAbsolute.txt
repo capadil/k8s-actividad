@@ -31,3 +31,4 @@ D:\Universidad Sabana\Arquitectura\Arquitectura de software\K8s-actividad\src\Sa
 D:\Universidad Sabana\Arquitectura\Arquitectura de software\K8s-actividad\src\SandboxService\obj\Debug\net8.0\SandboxService.pdb
 D:\Universidad Sabana\Arquitectura\Arquitectura de software\K8s-actividad\src\SandboxService\obj\Debug\net8.0\SandboxService.genruntimeconfig.cache
 D:\Universidad Sabana\Arquitectura\Arquitectura de software\K8s-actividad\src\SandboxService\obj\Debug\net8.0\ref\SandboxService.dll
+D:\Universidad Sabana\Arquitectura\Arquitectura de software\K8s-actividad\src\SandboxService\obj\Debug\net8.0\SandboxService.sourcelink.json
