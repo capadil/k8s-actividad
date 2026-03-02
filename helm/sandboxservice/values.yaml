@@ -1,0 +1,32 @@
+# Default values for sandboxservice.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+replicaCount: 1
+
+# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
+image:
+  repository: sandboxservice
+  # This sets the pull policy for images.
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "local"
+
+# This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
+service:
+  # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+  type: ClusterIP
+  # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
+  port: 80
+  targetPort: 8080
+
+env:
+  # This sets environment variables for the container more information can be found here: https://kubernetes.io/docs/concepts/containers/environment-variables/
+  APP_VERSION: "K8s-helm-1.0.0"
+  ASPNETCORE_URLS: "http://+:8080"
+
+nameOverride: ""
+fullnameOverride: ""
+autoscaling:
+  enabled: false
