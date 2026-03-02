@@ -1,0 +1,19 @@
+# This file defines a Kubernetes Service, which is an abstraction that defines a logical set of Pods and a policy by which to access them.
+apiVersion: v1
+# The kind of Kubernetes object being defined, in this case a Service.
+kind: Service
+# Metadata about the Service, including its name and labels.
+metadata:
+  name: sandboxservice
+  namespace: dev
+  labels:
+    app: sandboxservice
+# The specification of the Service, including the type of service and the ports it exposes.
+spec:
+  selector:
+    app: sandboxservice
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  type: ClusterIP

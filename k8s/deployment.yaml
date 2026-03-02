@@ -1,0 +1,32 @@
+# This file describes a Kubernetes Deployment for the SandboxService application.
+apiVersion: apps/v1
+# The kind of Kubernetes object being defined, in this case a Deployment.
+kind: Deployment
+# Metadata about the Deployment, including its name and labels.
+metadata:
+  name: sandboxservice
+  namespace: dev
+  labels:
+    app: sandboxservice
+# The specification of the Deployment, including the number of replicas and the template for the pods.
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sandboxservice
+  template:
+    metadata:
+      labels:
+        app: sandboxservice
+    spec:
+      containers:
+        - name: sandboxservice
+          image: sandboxservice:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: APP_VERSION
+              value: "K8s-1.0.0"
+            - name: ASPNETCORE_URLS
+              value: "http://+:8080"
