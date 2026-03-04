@@ -1,7 +1,7 @@
 replicaCount: 1
 image:
   repository: ghcr.io/capadil/sandboxservice
-  tag: 353aca354f3484e359f6f4bcb6e7059196c07352
+  tag: 6644e06a96a073824751d9de8562e4e6be8f4de5
   pullPolicy: IfNotPresent
 service:
   type: NodePort
