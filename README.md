@@ -96,9 +96,106 @@ kubectl apply -f argocd/app-dev.yaml
 kubectl -n argocd get applications
 kubectl -n argocd describe application sandboxservice-dev
 
+## CI/CD (GitOps) — Responsabilidades y Verificación
 
-## pendiente CI CD
+Este repositorio implementa CI/CD usando **GitHub Actions (CI)** + **GHCR (registry)** + **ArgoCD (CD/GitOps)**.
 
+### Objetivo del flujo
+Al detectar un **push/commit en `main`**:
+1) **CI** construye la imagen Docker y la publica en **GHCR** con tag inmutable (`SHA`).
+2) **CI** actualiza `helm/sandboxservice/values-dev.yaml` con `image.tag = <SHA>` y hace commit/push (GitOps bump).
+3) **CD (ArgoCD)** detecta ese commit y despliega automáticamente en el clúster (namespace `dev`).
+
+---
+
+## Responsabilidades (quién hace qué)
+
+### Desarrollador (equipo)
+- Realiza cambios de código en `src/` y/o chart en `helm/`.
+- Hace push a la rama configurada (`main`).
+- Revisa el resultado del pipeline en GitHub Actions.
+- NO debe hacer despliegues manuales en `dev` (evitar `kubectl apply` o `helm install` manual), porque ArgoCD es la fuente de verdad.
+
+### GitHub Actions (CI)
+Archivo: `.github/workflows/ci-cd-dev.yml`
+
+Responsable de:
+- Autenticarse contra GHCR usando `GITHUB_TOKEN`.
+- **Build** de la imagen desde `Dockerfile`.
+- **Push** de la imagen a GHCR:
+  - `ghcr.io/<owner-lc>/sandboxservice:<SHA>`
+  - `ghcr.io/<owner-lc>/sandboxservice:dev` (tag “cómodo”)
+- Modificar `helm/sandboxservice/values-dev.yaml`:
+  - `image.repository = ghcr.io/<owner-lc>/sandboxservice`
+  - `image.tag = <SHA>`
+- Hacer commit/push del bump.
+- Si el build falla, NO hace bump → ArgoCD NO despliega una imagen inexistente.
+
+### GHCR (GitHub Container Registry)
+Responsable de almacenar imágenes publicadas por el CI.
+
+Recomendación para ambiente local (Docker Desktop K8s):
+- Configurar el paquete como **Public** para evitar `imagePullSecrets` y errores `ImagePullBackOff`.
+
+### ArgoCD (CD/GitOps)
+Archivo: `argocd/app-dev.yaml`
+
+Responsable de:
+- Monitorear el repo (ruta `helm/sandboxservice`).
+- Renderizar Helm usando `values-dev.yaml`.
+- Aplicar cambios al namespace `dev`.
+- Mantener estado `Synced/Healthy`.
+- Corregir drift si alguien cambia recursos manualmente (si `selfHeal` está habilitado).
+
+### Administrador del clúster (si aplica)
+- Mantener el clúster disponible.
+- Validar conectividad y permisos en namespaces (`argocd`, `dev`).
+- Si GHCR es privado: crear `imagePullSecret` y soportarlo en el chart.
+
+---
+
+## Archivos clave
+- `.github/workflows/ci-cd-dev.yml` → Pipeline CI.
+- `helm/sandboxservice/values.yaml` → Defaults (local).
+- `helm/sandboxservice/values-dev.yaml` → Overrides para dev (GHCR + tag actualizado por CI).
+- `helm/sandboxservice/templates/deployment.yaml` → Debe usar:
+  - `{{ .Values.image.repository }}:{{ .Values.image.tag }}`
+- `argocd/app-dev.yaml` → App ArgoCD que apunta al chart + values-dev.
+
+---
+
+## Cómo verificar que CI/CD funciona (Checklist)
+
+### A) Verificación CI (GitHub Actions)
+1) En GitHub → pestaña **Actions**.
+2) Selecciona workflow: **ci-cd-dev**.
+3) El run debe terminar en ✅ verde.
+4) En los logs, confirma:
+   - “Login to GHCR” OK
+   - “Build & Push image” OK
+   - “Update values-dev.yaml” OK
+   - “Commit & push bump” OK
+
+**Evidencia esperada:** aparece un nuevo commit automático en `main` como:
+- `chore(ci): bump dev image tag to <SHA>`
+
+> Nota: el workflow ignora cambios directos a `values-dev.yaml` para evitar loops.
+
+### B) Verificación Registry (GHCR)
+1) En GitHub → sección **Packages** del repo/owner.
+2) Debe existir el paquete `sandboxservice`.
+3) Debe existir un tag con el **SHA** del commit.
+4) Recomendación: poner el package como **Public** (en Settings del package).
+
+### C) Verificación CD (ArgoCD)
+1) Abre ArgoCD UI (port-forward):
+   ```bash
+   kubectl -n argocd port-forward svc/argocd-server 9090:443
+   # https://127.0.0.1:9090
+
+
+
+## levantar local
 wsl --shutdown
 
 Restart-Service com.docker.service
