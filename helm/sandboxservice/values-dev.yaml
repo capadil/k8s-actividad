@@ -4,9 +4,10 @@ image:
   tag: 353aca354f3484e359f6f4bcb6e7059196c07352
   pullPolicy: IfNotPresent
 service:
-  type: ClusterIP
+  type: NodePort
   port: 80
   targetPort: 8080
+  nodePort: 30080
 env:
   APP_VERSION: K8s-dev-helm-2.0.1
   ASPNETCORE_URLS: http://+:8080
