@@ -1,0 +1,91 @@
+# This workflow is triggered on push to the 'dev' branch and pull requests targeting the 'dev' branch.
+name: ci-cd-dev
+
+on:
+  push:
+    branches: ["main"]
+    paths-ignore:
+      - "helm/sandboxservice/values-dev.yaml"
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build_push_bump:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+        
+      - name: Compute vars
+        id: vars
+        # Convert the repository owner to lowercase for consistent image naming, as GHCR is case-sensitive.
+        # Output the lowercase owner as a step output for use in subsequent steps.
+        run: |
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "owner_lc=$OWNER_LC" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ steps.vars.outputs.owner_lc }}/sandboxservice:${{ github.sha }}
+            ghcr.io/${{ steps.vars.outputs.owner_lc }}/sandboxservice:dev
+
+      - name: Update values-dev.yaml (GitOps bump)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+
+          python - << 'PY'
+          import os, yaml
+
+          path = "helm/sandboxservice/values-dev.yaml"
+          sha = os.environ["GITHUB_SHA"]
+          owner_lc = "${{ steps.vars.outputs.owner_lc }}"
+          image_repo = f"ghcr.io/{owner_lc}/sandboxservice"
+
+          with open(path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+
+          img = data.get("image") or {}
+          img["repository"] = image_repo
+          img["tag"] = sha
+          img.setdefault("pullPolicy", "IfNotPresent")
+          data["image"] = img
+
+          with open(path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(data, f, sort_keys=False)
+          PY
+
+      - name: Commit & push bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add helm/sandboxservice/values-dev.yaml
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore(ci): bump dev image tag to ${{ github.sha }}"
+          git push
