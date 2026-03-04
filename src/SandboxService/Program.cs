@@ -23,6 +23,7 @@ app.UseHttpsRedirection();
 // Endpoint de “prueba de vida”
 app.MapGet("/health", () =>
 {
+    asdasd
     return Results.Ok(new
     {
         status = "ok",
