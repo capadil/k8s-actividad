@@ -1,7 +1,7 @@
 replicaCount: 1
 image:
   repository: ghcr.io/capadil/sandboxservice
-  tag: 9fd1eb73cd916c939553a64d23adb2aa50dbcf0e
+  tag: 353aca354f3484e359f6f4bcb6e7059196c07352
   pullPolicy: IfNotPresent
 service:
   type: ClusterIP
